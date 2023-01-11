@@ -9,7 +9,8 @@ beat_scheduler = os.environ.get('BEAT_SCHEDULER')
 beat_max_loop_interval = 5
 REDBEAT_LOCK_TIMEOUT = beat_max_loop_interval * 5
 task_queues = (
-    Queue('normal', Exchange('normal'), routing_key='normal')
+    Queue('normal', Exchange('normal'), routing_key='normal'),
+    Queue('low', Exchange('low'), routing_key='low'),
 )
 
 task_default_queue = 'normal'

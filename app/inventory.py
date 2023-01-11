@@ -1,8 +1,9 @@
 from app import celery
 
 @celery.task(ignore_result=True)
-def fetch_stock_data():
-    print("random task running now ---------------------")
+def fetch_stock_data(testvariable):
+    print("random task running now ---------------------" + testvariable)
+    return "success"
 
 
 @celery.task(ignore_result=True)

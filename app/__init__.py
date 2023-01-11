@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from celery import Celery
 from flask import Flask
 from redis import Redis
+from redbeat import RedBeatSchedulerEntry
 from flask_sqlalchemy import SQLAlchemy
 import os
 
@@ -27,4 +28,7 @@ def create_app():
     print("creating app")
     register_env_variables(app)
     app.redis = Redis.from_url(os.environ.get('REDIS_URL'))
+    app.scheduler = RedBeatSchedulerEntry
+    app.celery = Celery(app.name, broker=os.environ.get('CELERY_BROKER_URL'))
+    app.celery.config_from_object('celeryconfig')
     return app
