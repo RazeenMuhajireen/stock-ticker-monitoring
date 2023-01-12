@@ -7,6 +7,7 @@ from datetime import datetime
 import celery
 from celery.schedules import schedule
 from app import create_app, db
+from app import logger
 
 # WARNING: Don't run with debug turned on in production!
 DEBUG = (os.getenv('DEBUG', 'False') == 'True')
@@ -21,14 +22,18 @@ Migrate(app, db)
 def hello():
     return "Hello world"
 
-@app.route('/postdata', methods=['POST'])
+@app.route('/postdata', methods=['POST', 'GET'])
 def getdata():
-    if request.method == 'POST':
+    if request.method == 'POST' or request.method == 'GET':
         print("request is a post")
         field1 = request.args.get('field1')
         field2 = request.args.get('field2')
-        print("args got ========")
-        print(field1)
+        logger.warning("args got ========")
+        logger.error("t1")
+        logger.debug("x1")
+        logger.critical("b1")
+        print("change")
+
         print(field2)
         data = "Post sent"
         success = testfunc()

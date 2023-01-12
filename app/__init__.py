@@ -5,8 +5,18 @@ from redis import Redis
 from redbeat import RedBeatSchedulerEntry
 from flask_sqlalchemy import SQLAlchemy
 import os
+import logging
 
 load_dotenv()
+
+logfile_name = '/home/raz/myproject/logfiles/test.log'
+formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+handler = logging.FileHandler(filename=logfile_name)
+handler.setFormatter(formatter)
+logger = logging.getLogger('app')
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
+
 
 db = SQLAlchemy()
 
