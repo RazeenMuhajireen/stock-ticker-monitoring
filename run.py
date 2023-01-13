@@ -28,6 +28,8 @@ def getdata():
         print("request is a post")
         field1 = request.args.get('field1')
         field2 = request.args.get('field2')
+        host = "raz"
+        host2 = "xxxx"
         logger.warning("args got ========")
         logger.error("t1")
         logger.debug("x1")
@@ -51,9 +53,9 @@ def addtestjob():
 
     # customer = formdata[0]['customername']
 
-    cargs1 = 'testargument'
+    cargs1 = 'testargument3'
     args = [cargs1]
-    jobdescription = 'Minercontrol:Daily-RandomTask:' + 'TestTask'
+    jobdescription = 'Minercontrol:Daily-RandomTask:' + 'testargument3'
 
     newjob = current_app.scheduler(jobdescription, cfunction, croninterval, args=args, app=current_app.celery)
     newjob.save()
