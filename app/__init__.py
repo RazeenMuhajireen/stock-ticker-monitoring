@@ -37,7 +37,7 @@ def create_app():
     app = Flask(__name__)
     print("creating app")
     register_env_variables(app)
-    app.redis = Redis.from_url(os.environ.get('REDIS_URL'))
+    app.redis = Redis.from_url(os.environ.get('REDIS_URL'), decode_responses=True)
     app.scheduler = RedBeatSchedulerEntry
     app.celery = Celery(app.name, broker=os.environ.get('CELERY_BROKER_URL'))
     app.celery.config_from_object('celeryconfig')
