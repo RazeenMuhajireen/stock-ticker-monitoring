@@ -1,3 +1,3 @@
 #!/bin/bash
-source /home/raz/myproject/env-stock/bin/activate
+source /home/raz/myproject/env-new-stock/bin/activate
 celery beat -l debug

@@ -6,6 +6,7 @@ from datetime import datetime
 import celery
 from app import create_app, db
 from app import logger
+from app.models import TickerTable, StockDataTable
 
 # WARNING: Don't run with debug turned on in production!
 DEBUG = (os.getenv('DEBUG', 'False') == 'True')
