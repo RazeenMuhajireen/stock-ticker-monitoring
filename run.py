@@ -1,7 +1,7 @@
 import os
 from flask import redirect, url_for, jsonify, request, current_app
 from flask_migrate import Migrate
-from app.dataquery import remove_job, search_cron_job
+from app.dataquery import remove_job, search_cron_job, add_stock_info
 from datetime import datetime
 import celery
 from app import create_app, db
@@ -38,6 +38,9 @@ def add_ticker_job():
         cargs1 = request.args.get('stock_ticker_symbol')
         cargs2 = request.args.get('stock_name')
         cargs3 = request.args.get('description')
+
+        add_result = add_stock_info(cargs1, cargs2, cargs3)
+
 
         # store the description and combo data to sql table stock_tickers -------------------------
         # check if already this ticker symbol is available before creating new record -----------------

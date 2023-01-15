@@ -1,5 +1,8 @@
 from flask import current_app
 from redbeat.decoder import RedBeatJSONDecoder
+from app.models import TickerTable
+from datetime import datetime
+from app import db
 import pandas as pd
 import json
 
@@ -72,3 +75,30 @@ def remove_job(cronitem):
             apredis.zrem('cron_jobs', job)
 
     return 0, cronitem
+
+
+def add_stock_info(stock_ticker_symbol, stock_name, description):
+    stock_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == stock_ticker_symbol).first()
+
+    if not stock_item:
+        ticker_record = TickerTable(
+            datestamp=datetime.utcnow(),
+            tickersymbol=stock_ticker_symbol,
+            stockname=stock_name,
+            description=description,
+            isalive=True
+        )
+        db.session.add(ticker_record)
+        db.session.commit()
+    else:
+        if stock_item.isalive:
+            print("already a job is running for this ")
+        else:
+            stock_item.isalive = True
+            stock_item.stockname = stock_name
+            stock_item.description = description
+            db.session.commit()
+
+
+def update_stock_info():
+    print("edit stock info")
