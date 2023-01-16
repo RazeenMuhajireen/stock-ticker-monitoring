@@ -185,3 +185,30 @@ def list_all_current_stock_data():
             marketdict['regularMarketVolume'] = marketdata.regularMarketVolume
             results.append(marketdict)
     return results
+
+
+def get_stock_data(ticker_symbol):
+    results = []
+    stock_data = db.session.query(TickerTable, StockDataTable)\
+        .join(StockDataTable)\
+        .filter(TickerTable.tickersymbol == ticker_symbol).all()
+    if len(stock_data) > 0:
+        for datapoint in stock_data:
+            marketdict = {}
+            marketdict['ticker_symbol'] = datapoint.TickerTable.tickersymbol
+            marketdict['stock_name'] = datapoint.TickerTable.stockname
+            marketdict['description'] = datapoint.TickerTable.description
+            marketdict['isalive'] = datapoint.TickerTable.isalive
+            marketdict['sector'] = datapoint.StockDataTable.sector
+            marketdict['country'] = datapoint.StockDataTable.country
+            marketdict['regularMarketOpen'] = datapoint.StockDataTable.regularMarketOpen
+            marketdict['regularMarketPrice'] = datapoint.StockDataTable.regularMarketPrice
+            marketdict['regularMarketPreviousClose'] = datapoint.StockDataTable.regularMarketPreviousClose
+            marketdict['regularMarketDayLow'] = datapoint.StockDataTable.regularMarketDayLow
+            marketdict['regularMarketDayHigh'] = datapoint.StockDataTable.regularMarketDayHigh
+            marketdict['marketCap'] = datapoint.StockDataTable.marketCap
+            marketdict['datestamp'] = datapoint.StockDataTable.datestamp
+            marketdict['regularMarketVolume'] = datapoint.StockDataTable.regularMarketVolume
+            results.append(marketdict)
+
+    return results

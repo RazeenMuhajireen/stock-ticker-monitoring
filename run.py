@@ -2,12 +2,12 @@ import os
 from flask import jsonify, request, current_app
 from flask_migrate import Migrate
 from app.dataquery import remove_job, search_cron_job, add_ticker_info, update_ticker_info, add_daily_email_info, \
-    update_dailyemail_status, update_ticker_status, list_all_current_stock_data
+    update_dailyemail_status, update_ticker_status, list_all_current_stock_data, get_stock_data
 from datetime import datetime
 import celery
 from app import create_app, db
 from app import logger
-from app.models import TickerTable, StockDataTable
+
 
 # WARNING: Don't run with debug turned on in production!
 DEBUG = (os.getenv('DEBUG', 'False') == 'True')
@@ -121,15 +121,13 @@ def update_ticker_details():
 
 @app.route('/single_stock_data', methods=['GET'])
 def single_stock_data():
-    # Retrieve a single stock along with its market stats. alive or dead---------show status---------------------
-    print("done")
+    if 'ticker_symbol' not in request.args:
+        data = "'ticker_symbol' parameter missing. please specify as ticker_symbol to retreive data."
+        return jsonify(data=data, success=False)
 
-
-@app.route('/all_stock_data', methods=['GET'])
-def all_stock_data():
-    # args live, all, dead status stock data--------------------show status--------------------------
-    # show market stats too-------------------------
-    print("ok")
+    ticker_symbol = request.args.get('ticker_symbol')
+    data = get_stock_data(ticker_symbol)
+    return jsonify(data=data, success=True)
 
 
 if __name__ == "__main__":
