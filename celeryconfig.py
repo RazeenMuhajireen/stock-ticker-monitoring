@@ -19,6 +19,6 @@ task_default_exchange = 'normal'
 task_default_routing_key = 'normal'
 task_routes = {
     'app.inventory.fetch_stock_data': {'queue': 'normal'},
-    'app.inventory.send_email_summary': {'queue': 'normal'}
+    'app.inventory.send_email_summary': {'queue': 'low'}
 }
 

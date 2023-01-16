@@ -1,7 +1,7 @@
 import os
 from flask import redirect, url_for, jsonify, request, current_app
 from flask_migrate import Migrate
-from app.dataquery import remove_job, search_cron_job, add_stock_info, update_ticker_info, add_email_info
+from app.dataquery import remove_job, search_cron_job, add_stock_info, update_ticker_info, add_daily_email_info
 from datetime import datetime
 import celery
 from app import create_app, db
@@ -24,7 +24,7 @@ def hello():
 
 
 @app.route('/add_job', methods=['POST'])
-def add_ticker_job():
+def add_job():
     print("in new job add -------------")
     apredis = current_app.redis
     zentrytime = int(datetime.now().timestamp())
@@ -55,7 +55,7 @@ def add_ticker_job():
         args = [cargs1]
         jobdescription = 'StockTicker:dailyemail:' + str(cargs1)
 
-        add_email_result = add_email_info(cargs1)
+        add_email_result = add_daily_email_info(cargs1)
         if not add_email_result[0]:
             data = "Unable to add job. Email job already running for the email address:" + str(cargs1)
             return jsonify(data=data, success=False)

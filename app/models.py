@@ -32,9 +32,10 @@ class StockDataTable(db.Model):
     stock_ticker_id = db.Column(Integer, db.ForeignKey('stocktickertable.id'))
 
 
-class DailyEmailID(db.Model):
-    __tablename__ = 'dailyemailid'
+class EmailID(db.Model):
+    __tablename__ = 'emailid'
 
     id = db.Column(db.Integer, primary_key=True)
     emai_id = db.Column(db.String(100))
+    dailymail_flag = db.Column(db.Boolean, default=False)
     isalive = db.Column(db.Boolean, default=True)

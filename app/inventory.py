@@ -1,6 +1,6 @@
 from app import celery, db
 import yfinance as yf
-from app.models import StockDataTable, TickerTable, DailyEmailID
+from app.models import StockDataTable, TickerTable, EmailID
 from datetime import datetime
 
 
@@ -38,5 +38,6 @@ def fetch_stock_data(ticker_symbol):
 
 
 @celery.task(ignore_result=True)
-def send_email_summary():
+def send_email_summary(email_id):
+    print("email id -------------- " + str(email_id))
     print("email summary task running now ---------------------")

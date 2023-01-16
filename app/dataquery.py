@@ -1,6 +1,6 @@
 from flask import current_app
 from redbeat.decoder import RedBeatJSONDecoder
-from app.models import TickerTable, DailyEmailID
+from app.models import TickerTable, EmailID
 from datetime import datetime
 from app import db
 import pandas as pd
@@ -118,12 +118,13 @@ def update_ticker_info(stock_ticker_symbol, stock_name, description):
         return False, "No ticker item found."
 
 
-def add_email_info(email_id):
-    email_item = db.session.query(DailyEmailID).filter(DailyEmailID.emai_id == email_id).first()
+def add_daily_email_info(email_id):
+    email_item = db.session.query(EmailID).filter(EmailID.emai_id == email_id).first()
 
     if not email_item:
-        email_record = DailyEmailID(
+        email_record = EmailID(
             emai_id=str(email_id),
+            dailymail_flag=True,
             isalive=True
         )
         db.session.add(email_record)
@@ -131,9 +132,16 @@ def add_email_info(email_id):
         return True, "created new email entry"
     else:
         if email_item.isalive:
-            return False, "ticker already exists and running."
+            if email_item.dailymail_flag:
+                return False, "daily summary email already exists and running."
+            else:
+                email_item.dailymail_flag = True
+                db.session.commit()
+                return True, "email already exists, setting daily summary email."
+
         else:
             email_item.isalive = True
+            email_item.dailymail_flag = True
             db.session.commit()
-            return True, "email already exists, running job again."
+            return True, "email already exists, setting daily summary email."
 
