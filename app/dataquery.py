@@ -1,7 +1,8 @@
 from flask import current_app
 from redbeat.decoder import RedBeatJSONDecoder
-from app.models import TickerTable, EmailID
+from app.models import TickerTable, EmailID, StockDataTable
 from datetime import datetime
+from sqlalchemy import desc
 from app import db
 import pandas as pd
 import json
@@ -159,3 +160,28 @@ def update_ticker_status(ticker_symbol):
         ticker_object.isalive = False
         db.session.commit()
 
+
+def list_all_current_stock_data():
+    results = []
+    running_ticker_jobs = db.session.query(TickerTable).filter(TickerTable.isalive == True).all()
+    if len(running_ticker_jobs) > 0:
+        for ticker_item in running_ticker_jobs:
+            marketdict = {}
+            marketdict['ticker_symbol'] = ticker_item.tickersymbol
+            marketdict['stock_name'] = ticker_item.stockname
+            marketdict['description'] = ticker_item.description
+            marketdata = db.session.query(StockDataTable) \
+                .filter(StockDataTable.stock_ticker_id == ticker_item.id).order_by(
+                desc(StockDataTable.datestamp)).first()
+            marketdict['sector'] = marketdata.sector
+            marketdict['country'] = marketdata.country
+            marketdict['regularMarketOpen'] = marketdata.regularMarketOpen
+            marketdict['regularMarketPrice'] = marketdata.regularMarketPrice
+            marketdict['regularMarketPreviousClose'] = marketdata.regularMarketPreviousClose
+            marketdict['regularMarketDayLow'] = marketdata.regularMarketDayLow
+            marketdict['regularMarketDayHigh'] = marketdata.regularMarketDayHigh
+            marketdict['marketCap'] = marketdata.marketCap
+            marketdict['datestamp'] = marketdata.datestamp
+            marketdict['regularMarketVolume'] = marketdata.regularMarketVolume
+            results.append(marketdict)
+    return results

@@ -1,8 +1,8 @@
 import os
-from flask import redirect, url_for, jsonify, request, current_app
+from flask import jsonify, request, current_app
 from flask_migrate import Migrate
 from app.dataquery import remove_job, search_cron_job, add_ticker_info, update_ticker_info, add_daily_email_info, \
-    update_dailyemail_status, update_ticker_status
+    update_dailyemail_status, update_ticker_status, list_all_current_stock_data
 from datetime import datetime
 import celery
 from app import create_app, db
@@ -102,14 +102,10 @@ def remove_scheduled_job():
     return jsonify(data=message, success=True)
 
 
-@app.route('/list_jobs', methods=['GET'])
-def list_jobs():
-    jobtype = request.args.get('job_type', 'all')
-    term = request.args.get('term', '')
-    jobs = search_cron_job(term, jobtype)
-    # combine these data with the description stuff from db ==========================================
-    print(jobs)
-    return "done"
+@app.route('/list_current_stock_jobs', methods=['GET'])
+def list_current_stock_jobs():
+    data = list_all_current_stock_data()
+    return jsonify(data=data, success=True)
 
 
 @app.route('/update_ticker_details', methods=['POST'])
