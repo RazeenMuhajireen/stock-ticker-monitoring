@@ -10,7 +10,7 @@ import logging
 
 load_dotenv()
 
-logfile_name = '/home/raz/myproject/logfiles/test.log'
+logfile_name = os.environ.get('LOGFILE_PATH')
 formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
 handler = logging.FileHandler(filename=logfile_name)
 handler.setFormatter(formatter)
@@ -26,6 +26,7 @@ celery = Celery(__name__,
                 broker=os.environ.get('CELERY_BROKER_URL'),
                 backend=os.environ.get('CELERY_BROKER_URL'))
 celery.config_from_object('celeryconfig')
+
 
 def register_env_variables(app):
     app.debug = os.environ.get('DEBUG', 'False') == 'True'

@@ -1,7 +1,8 @@
 import os
 from flask import redirect, url_for, jsonify, request, current_app
 from flask_migrate import Migrate
-from app.dataquery import remove_job, search_cron_job, add_stock_info, update_ticker_info, add_daily_email_info
+from app.dataquery import remove_job, search_cron_job, add_ticker_info, update_ticker_info, add_daily_email_info, \
+    update_dailyemail_status, update_ticker_status
 from datetime import datetime
 import celery
 from app import create_app, db
@@ -16,11 +17,6 @@ get_config_mode = 'Debug' if DEBUG else 'Production'
 
 app = create_app()
 Migrate(app, db)
-
-
-@app.route('/')
-def hello():
-    return "Hello world"
 
 
 @app.route('/add_job', methods=['POST'])
@@ -50,7 +46,7 @@ def add_job():
         cargs2 = request.args.get('stock_name', "Not Set")
         cargs3 = request.args.get('description', "Not Set")
 
-        add_ticker_result = add_stock_info(cargs1, cargs2, cargs3)
+        add_ticker_result = add_ticker_info(cargs1, cargs2, cargs3)
 
         if not add_ticker_result[0]:
             data = "Unable to add job. Ticker job already running for the ticker symbol:" + str(cargs1)
@@ -74,15 +70,12 @@ def add_job():
             return jsonify(data=data, success=False)
 
     newjob = current_app.scheduler(jobdescription, cfunction, croninterval, args=args, app=current_app.celery)
+
     newjob.save()
     carglist = ','.join(args)
     newkey = '{}|{}|{}|{}'.format(jobdescription, croninterval, cfunction, carglist)
     apredis.zadd('cron_jobs', {newkey: zentrytime})
     data = "Job added successfully"
-    # logger.warning("args got ========")
-    # logger.error("t1")
-    # logger.debug("x1")
-    # logger.critical("b1")
     return jsonify(data=data, success=True)
 
 
@@ -92,15 +85,18 @@ def remove_scheduled_job():
         data = "'job_type' parameter missing. please specify as inventory or dailyemail."
         return jsonify(data=data, success=False)
     if 'term' not in request.args:
-        data = "'term' parameter missing. plaese specify term as stock ticker symbol for inventory job or email " \
+        data = "'term' parameter missing. please specify term as stock ticker symbol for inventory job or email " \
                "address for dailyemail job"
         return jsonify(data=data, success=False)
     jobtype = request.args.get('job_type')
     term = request.args.get('term')
     jobs = search_cron_job(term, jobtype)
-    print(jobs)
     if len(jobs[1]) > 0:
         message = remove_job(jobs[1][0][0])
+        if jobtype == 'dailyemail':
+            update_dailyemail_status(term)
+        elif jobtype == 'inventory':
+            update_ticker_status(term)
     else:
         message = "No matching job to remove"
     return jsonify(data=message, success=True)
@@ -116,7 +112,7 @@ def list_jobs():
     return "done"
 
 
-@app.route('/update_ticker_details', methods=['GET', "POST"])
+@app.route('/update_ticker_details', methods=['POST'])
 def update_ticker_details():
     ticker_symbol = request.args.get('ticker_symbol', '')
     stock_name = request.args.get('stock_name', '')

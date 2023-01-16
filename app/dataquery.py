@@ -74,7 +74,7 @@ def remove_job(cronitem):
     return 'job removed successfully.'
 
 
-def add_stock_info(stock_ticker_symbol, stock_name, description):
+def add_ticker_info(stock_ticker_symbol, stock_name, description):
     ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == stock_ticker_symbol).first()
 
     if not ticker_item:
@@ -103,8 +103,10 @@ def update_ticker_info(stock_ticker_symbol, stock_name, description):
     ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == stock_ticker_symbol).first()
 
     if ticker_item:
-        ticker_item.stockname = stock_name
-        ticker_item.description = description
+        if stock_name != '':
+            ticker_item.stockname = stock_name
+        if description != '':
+            ticker_item.description = description
         try:
             db.session.commit()
             return True, "stock ticker info updated successfully."
@@ -141,4 +143,19 @@ def add_daily_email_info(email_id):
             email_item.dailymail_flag = True
             db.session.commit()
             return True, "email already exists, setting daily summary email."
+
+
+def update_dailyemail_status(emailid):
+    emailitem = db.session.query(EmailID).filter(EmailID.emai_id == emailid).first()
+    if emailitem:
+        emailitem.dailymail_flag = False
+        emailitem.isalive = False
+        db.session.commit()
+
+
+def update_ticker_status(ticker_symbol):
+    ticker_object = db.session.query(TickerTable).filter(TickerTable.tickersymbol == ticker_symbol).first()
+    if ticker_object:
+        ticker_object.isalive = False
+        db.session.commit()
 

@@ -1,24 +1,27 @@
-from app import celery, db
+
 import yfinance as yf
+from app import create_app
 from app.models import StockDataTable, TickerTable, EmailID
+from app import celery, db, logger
 from datetime import datetime
 
 
+# Try to load the app once
+app = create_app()
+celery.conf.update(app.config)
+app.app_context().push()
+
 @celery.task(ignore_result=True)
 def fetch_stock_data(ticker_symbol):
-    print("collecting now ---------------------" + ticker_symbol)
-
-    ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == ticker_symbol).first()
-
     try:
+        ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == str(ticker_symbol)).first()
         ticker = yf.Ticker(ticker_symbol).info
+        print(ticker)
 
         stockdatapoint = StockDataTable(
             datestamp=datetime.utcnow(),
             sector=str(ticker['sector']),
             country=str(ticker['country']),
-            market_price=str(ticker['market_price']),
-            previous_close_price=str(ticker['previous_close_price']),
             regularMarketOpen=str(ticker['regularMarketOpen']),
             regularMarketPrice=str(ticker['regularMarketPrice']),
             regularMarketPreviousClose=str(ticker['regularMarketPreviousClose']),
@@ -30,9 +33,8 @@ def fetch_stock_data(ticker_symbol):
         ticker_item.stock_data.append(stockdatapoint)
         db.session.add(stockdatapoint)
         db.session.commit()
-        db.session.rollback()
     except Exception as e:
-        print(str(e))
+        logger.error("Error in ticker job: " + str(e))
         db.session.rollback()
     return "success"
 
