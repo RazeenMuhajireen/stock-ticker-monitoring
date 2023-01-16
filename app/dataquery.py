@@ -1,6 +1,6 @@
 from flask import current_app
 from redbeat.decoder import RedBeatJSONDecoder
-from app.models import TickerTable
+from app.models import TickerTable, DailyEmailID
 from datetime import datetime
 from app import db
 import pandas as pd
@@ -78,9 +78,9 @@ def remove_job(cronitem):
 
 
 def add_stock_info(stock_ticker_symbol, stock_name, description):
-    stock_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == stock_ticker_symbol).first()
+    ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == stock_ticker_symbol).first()
 
-    if not stock_item:
+    if not ticker_item:
         ticker_record = TickerTable(
             datestamp=datetime.utcnow(),
             tickersymbol=stock_ticker_symbol,
@@ -90,15 +90,50 @@ def add_stock_info(stock_ticker_symbol, stock_name, description):
         )
         db.session.add(ticker_record)
         db.session.commit()
+        return True, "created new ticker entry"
     else:
-        if stock_item.isalive:
-            print("already a job is running for this ")
+        if ticker_item.isalive:
+            return False, "ticker already exists and running."
         else:
-            stock_item.isalive = True
-            stock_item.stockname = stock_name
-            stock_item.description = description
+            ticker_item.isalive = True
+            ticker_item.stockname = stock_name
+            ticker_item.description = description
             db.session.commit()
+            return True, "ticker already exists, updated info and running again."
 
 
-def update_stock_info():
-    print("edit stock info")
+def update_ticker_info(stock_ticker_symbol, stock_name, description):
+    ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == stock_ticker_symbol).first()
+
+    if ticker_item:
+        ticker_item.stockname = stock_name
+        ticker_item.description = description
+        try:
+            db.session.commit()
+            return True, "stock ticker info updated successfully."
+        except Exception as e:
+            db.session.rollback()
+            return False, "Unable to update ticker info:" + str(e)
+    else:
+        return False, "No ticker item found."
+
+
+def add_email_info(email_id):
+    email_item = db.session.query(DailyEmailID).filter(DailyEmailID.emai_id == email_id).first()
+
+    if not email_item:
+        email_record = DailyEmailID(
+            emai_id=str(email_id),
+            isalive=True
+        )
+        db.session.add(email_record)
+        db.session.commit()
+        return True, "created new email entry"
+    else:
+        if email_item.isalive:
+            return False, "ticker already exists and running."
+        else:
+            email_item.isalive = True
+            db.session.commit()
+            return True, "email already exists, running job again."
+

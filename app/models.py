@@ -2,6 +2,7 @@ from app import db
 from datetime import datetime
 from sqlalchemy import Integer
 
+
 class TickerTable(db.Model):
     __tablename__ = 'stocktickertable'
 
@@ -10,7 +11,7 @@ class TickerTable(db.Model):
     tickersymbol = db.Column(db.String(40))
     stockname = db.Column(db.String(40), server_default='None', default='None')
     description = db.Column(db.String(40), server_default='None', default='None')
-    alive = db.Column(db.Boolean, default=True)
+    isalive = db.Column(db.Boolean, default=True)
     stock_data = db.relationship('StockDataTable', backref=db.backref('stockdataticker', lazy=True))
 
 
@@ -29,3 +30,11 @@ class StockDataTable(db.Model):
     regularMarketDayHigh = db.Column(db.String(100))
     marketCap = db.Column(db.String(100))
     stock_ticker_id = db.Column(Integer, db.ForeignKey('stocktickertable.id'))
+
+
+class DailyEmailID(db.Model):
+    __tablename__ = 'dailyemailid'
+
+    id = db.Column(db.Integer, primary_key=True)
+    emai_id = db.Column(db.String(100))
+    isalive = db.Column(db.Boolean, default=True)

@@ -1,7 +1,7 @@
 import os
 from flask import redirect, url_for, jsonify, request, current_app
 from flask_migrate import Migrate
-from app.dataquery import remove_job, search_cron_job, add_stock_info
+from app.dataquery import remove_job, search_cron_job, add_stock_info, update_ticker_info, add_email_info
 from datetime import datetime
 import celery
 from app import create_app, db
@@ -17,9 +17,11 @@ get_config_mode = 'Debug' if DEBUG else 'Production'
 app = create_app()
 Migrate(app, db)
 
+
 @app.route('/')
 def hello():
     return "Hello world"
+
 
 @app.route('/add_job', methods=['POST'])
 def add_ticker_job():
@@ -39,19 +41,24 @@ def add_ticker_job():
         cargs2 = request.args.get('stock_name')
         cargs3 = request.args.get('description')
 
-        add_result = add_stock_info(cargs1, cargs2, cargs3)
+        add_ticker_result = add_stock_info(cargs1, cargs2, cargs3)
 
-
-        # store the description and combo data to sql table stock_tickers -------------------------
-        # check if already this ticker symbol is available before creating new record -----------------
-
+        if not add_ticker_result[0]:
+            data = "Unable to add job. Ticker job already running for the ticker symbol:" + str(cargs1)
+            return jsonify(data=data, success=False)
         args = [cargs1]
         jobdescription = 'StockTicker:inventory:' + str(cargs1)
+
     elif cjobtype == "dailymail":
         cfunction = 'app.inventory.send_email_summary'
         cargs1 = request.args.get('email_address')
         args = [cargs1]
         jobdescription = 'StockTicker:dailyemail:' + str(cargs1)
+
+        add_email_result = add_email_info(cargs1)
+        if not add_email_result[0]:
+            data = "Unable to add job. Email job already running for the email address:" + str(cargs1)
+            return jsonify(data=data, success=False)
 
     newjob = current_app.scheduler(jobdescription, cfunction, croninterval, args=args, app=current_app.celery)
     newjob.save()
@@ -63,7 +70,7 @@ def add_ticker_job():
     # logger.error("t1")
     # logger.debug("x1")
     # logger.critical("b1")
-    return jsonify(data=data, success="True")
+    return jsonify(data=data, success=True)
 
 
 @app.route('/remove_scheduled_job', methods=['POST'])
@@ -86,15 +93,15 @@ def list_jobs():
     return "done"
 
 
-@app.route('/update_stock_details', methods=['GET', "POST"])
-def update_stock_details():
+@app.route('/update_ticker_details', methods=['GET', "POST"])
+def update_ticker_details():
     ticker_symbol = request.args.get('ticker_symbol', '')
-    description = request.args.get('description', '')
     stock_name = request.args.get('stock_name', '')
-    # update stock name and description in DB ====================================================
-    # do not allow to change ticker symbol
-    print("update function nned work")
-    return "update done"
+    description = request.args.get('description', '')
+
+    result = update_ticker_info(ticker_symbol, stock_name, description)
+
+    return jsonify(data=result[1], success=result[0])
 
 
 @app.route('/single_stock_data', methods=['GET'])
@@ -102,11 +109,13 @@ def single_stock_data():
     # Retrieve a single stock along with its market stats. alive or dead---------show status---------------------
     print("done")
 
+
 @app.route('/all_stock_data', methods=['GET'])
 def all_stock_data():
     # args live, all, dead status stock data--------------------show status--------------------------
     # show market stats too-------------------------
     print("ok")
+
 
 if __name__ == "__main__":
     app.run()
