@@ -23,7 +23,7 @@ def search_cron_job(term, searchitem):
         scantype = 'redbeat:StockTicker:'
     elif searchitem == 'inventory':
         scantype = 'redbeat:StockTicker:inventory:'
-    elif searchitem == 'email':
+    elif searchitem == 'dailyemail':
         scantype = 'redbeat:StockTicker:dailyemail:'
     else:
         scantype = ''
@@ -56,7 +56,6 @@ def search_cron_job(term, searchitem):
     return 0, items
 
 
-
 def remove_job(cronitem):
     print("cron item to delete ====")
     print(cronitem)
@@ -70,11 +69,9 @@ def remove_job(cronitem):
         split = job.split('|')
 
         if cronitem in split[0]:
-            print("need to remove this job ===")
-            print(job)
             apredis.zrem('cron_jobs', job)
 
-    return 0, cronitem
+    return 'job removed successfully.'
 
 
 def add_stock_info(stock_ticker_symbol, stock_name, description):

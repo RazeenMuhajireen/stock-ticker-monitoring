@@ -25,9 +25,15 @@ def hello():
 
 @app.route('/add_job', methods=['POST'])
 def add_job():
-    print("in new job add -------------")
     apredis = current_app.redis
     zentrytime = int(datetime.now().timestamp())
+
+    if 'interval' not in request.args:
+        data = "'interval' parameter missing. please specify interval as integer."
+        return jsonify(data=data, success=False)
+    if 'job_type' not in request.args:
+        data = "'job_type' parameter missing. please specify job_type as inventory or dailyemail."
+        return jsonify(data=data, success=False)
 
     cinterval = int(request.args.get('interval'))
     cjobtype = request.args.get('job_type')
@@ -37,9 +43,12 @@ def add_job():
 
     if cjobtype == "inventory":
         cfunction = 'app.inventory.fetch_stock_data'
+        if 'stock_ticker_symbol' not in request.args:
+            data = "'stock_ticker_symbol' parameter missing. please specify stock_ticker_symbol."
+            return jsonify(data=data, success=False)
         cargs1 = request.args.get('stock_ticker_symbol')
-        cargs2 = request.args.get('stock_name')
-        cargs3 = request.args.get('description')
+        cargs2 = request.args.get('stock_name', "Not Set")
+        cargs3 = request.args.get('description', "Not Set")
 
         add_ticker_result = add_stock_info(cargs1, cargs2, cargs3)
 
@@ -49,8 +58,12 @@ def add_job():
         args = [cargs1]
         jobdescription = 'StockTicker:inventory:' + str(cargs1)
 
-    elif cjobtype == "dailymail":
+    elif cjobtype == "dailyemail":
         cfunction = 'app.inventory.send_email_summary'
+        if 'email_address' not in request.args:
+            data = "'email_address' parameter missing. please specify email address to send summary mail."
+            return jsonify(data=data, success=False)
+
         cargs1 = request.args.get('email_address')
         args = [cargs1]
         jobdescription = 'StockTicker:dailyemail:' + str(cargs1)
@@ -75,12 +88,22 @@ def add_job():
 
 @app.route('/remove_scheduled_job', methods=['POST'])
 def remove_scheduled_job():
+    if 'job_type' not in request.args:
+        data = "'job_type' parameter missing. please specify as inventory or dailyemail."
+        return jsonify(data=data, success=False)
+    if 'term' not in request.args:
+        data = "'term' parameter missing. plaese specify term as stock ticker symbol for inventory job or email " \
+               "address for dailyemail job"
+        return jsonify(data=data, success=False)
     jobtype = request.args.get('job_type')
     term = request.args.get('term')
     jobs = search_cron_job(term, jobtype)
     print(jobs)
-    message = remove_job(jobs[1][0][0])
-    return message
+    if len(jobs[1]) > 0:
+        message = remove_job(jobs[1][0][0])
+    else:
+        message = "No matching job to remove"
+    return jsonify(data=message, success=True)
 
 
 @app.route('/list_jobs', methods=['GET'])
