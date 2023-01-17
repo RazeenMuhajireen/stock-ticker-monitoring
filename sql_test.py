@@ -1,14 +1,17 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from app import create_app
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = create_app()
 app.app_context().push()
 
-app.config["SQLALCHEMY_DATABASE_URI"] = 'mysql+mysqlconnector://root:Password@localhost:13306/stock_ticker'
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('SQLALCHEMY_DATABASE_URI')
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 db = SQLAlchemy(app)
-
 
 
 class Person(db.Model):
