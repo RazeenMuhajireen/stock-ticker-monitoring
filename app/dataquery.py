@@ -212,3 +212,54 @@ def get_stock_data(ticker_symbol):
             results.append(marketdict)
 
     return results
+
+
+def get_summary_data():
+    running_df = pd.DataFrame()
+    dead_df = pd.DataFrame()
+
+    running_tickers = db.session.query(TickerTable).filter(TickerTable.isalive == True).all()
+    if len(running_tickers) > 0:
+        running_data_list = []
+        for i in range(len(running_tickers)):
+            data = {}
+            data['Ticker Symbol'] = running_tickers[i].tickersymbol
+            data['Stock Name'] = running_tickers[i].stockname
+            data['Description'] = running_tickers[i].description
+            data['Last Update'] = running_tickers[i].datestamp
+            data['Market Price'] = "Unknown"
+            data['Market Volume'] = "Unknown"
+            marketdata = db.session.query(StockDataTable) \
+                .filter(StockDataTable.stock_ticker_id == running_tickers[i].id) \
+                .order_by(desc(StockDataTable.datestamp)).first()
+            if marketdata:
+                data['Last Update'] = marketdata.datestamp
+                data['Market Price'] = marketdata.regularMarketPrice
+                data['Market Volume'] = marketdata.regularMarketVolume
+            running_data_list.append(data)
+        if len(running_data_list) > 0:
+            running_df = pd.DataFrame(running_data_list)
+
+    dead_tickers = db.session.query(TickerTable).filter(TickerTable.isalive == False).all()
+    if len(dead_tickers) > 0:
+        dead_data_list = []
+        for i in range(len(dead_tickers)):
+            data = {}
+            data['Ticker Symbol'] = dead_tickers[i].tickersymbol
+            data['Stock Name'] = dead_tickers[i].stockname
+            data['Description'] = dead_tickers[i].description
+            data['Last Update'] = dead_tickers[i].datestamp
+            data['Market Price'] = "Unknown"
+            data['Market Volume'] = "Unknown"
+            marketdata = db.session.query(StockDataTable) \
+                .filter(StockDataTable.stock_ticker_id == dead_tickers[i].id) \
+                .order_by(desc(StockDataTable.datestamp)).first()
+            if marketdata:
+                data['Last Update'] = marketdata.datestamp
+                data['Market Price'] = marketdata.regularMarketPrice
+                data['Market Volume'] = marketdata.regularMarketVolume
+            dead_data_list.append(data)
+        if len(dead_data_list) > 0:
+            dead_df = pd.DataFrame(dead_data_list)
+    return running_df, dead_df
+

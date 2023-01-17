@@ -1,10 +1,13 @@
 
 import yfinance as yf
 from app import create_app
-from app.models import StockDataTable, TickerTable, EmailID
+from app.models import StockDataTable, TickerTable
+from app.dataquery import get_summary_data
 from app import celery, db, logger
 from datetime import datetime
 from dotenv import load_dotenv
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import smtplib
 import os
 
@@ -46,30 +49,49 @@ def fetch_stock_data(ticker_symbol):
 
 @celery.task(ignore_result=True)
 def send_email_summary(email_id):
-    print("email id -------------- " + str(email_id))
-    print("email summary task running now ---------------------")
+
     app_gmail_address = os.environ.get('APP_MAIL_ADDRESS')
     gmail_app_password = os.environ.get('MAIL_APP_PASSWORD')
+    to = [email_id]
 
-    subject = 'Daily Summary Report - Stock Monitoring App - '
-    body = 'Change this email body................'
+    msg = MIMEMultipart()
+    msg['Subject'] = "Stock Ticker Project - Daily Summary"
+    msg['From'] = app_gmail_address
 
-    email_text = """\
-    From: %s
-    To: %s
-    Subject: %s
+    running_df, dead_df = get_summary_data()
 
-    %s
-    """ % (app_gmail_address, email_id, subject, body)
+    if len(running_df) > 0:
+        html1 = """\
+        <html>
+          <head>{0}</head>
+          <body>
+            {1}
+          <br /><br /><br />
+          </body>
+        </html>
+        """.format("Currently Live Stock Tickers", running_df.to_html(index=False))
+        part1 = MIMEText(html1, 'html')
+        msg.attach(part1)
+
+    if len(dead_df) > 0:
+        html2 = """\
+        <html>
+          <head>{0}</head>
+          <body>
+            {1}
+          <br /><br /><br />
+          </body>
+        </html>
+        """.format("Currently Dead Stock Tickers", dead_df.to_html(index=False))
+        part2 = MIMEText(html2, 'html')
+        msg.attach(part2)
 
     try:
         smtp_server = smtplib.SMTP('smtp.gmail.com', 587)
-
         smtp_server.starttls()
         smtp_server.ehlo()
-
         smtp_server.login(app_gmail_address, gmail_app_password)
-        smtp_server.sendmail(app_gmail_address, email_id, email_text)
+        smtp_server.sendmail(app_gmail_address, to, msg.as_string())
         smtp_server.close()
         print("Email sent successfully!")
     except Exception as ex:
