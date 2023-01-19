@@ -50,8 +50,7 @@ def add_job():
                 args = [stock_ticker_symbol]
                 jobdescription = 'StockTicker:inventory:' + str(stock_ticker_symbol)
 
-        else:
-            # job_type == 'dailyemail
+        elif cjobtype == 'dailyemail':
             # if interval is not specified default interval is 24 hours (1440 minutes)
             cinterval = int(json_data.get('interval', '1440'))
             cinterval = cinterval * 60
@@ -67,7 +66,9 @@ def add_job():
                     return jsonify(data=data, success=False)
                 args = [email_address]
                 jobdescription = 'StockTicker:dailyemail:' + str(email_address)
-
+        else:
+            data = "job type {} not defined in system.".format(cjobtype)
+            return jsonify(data=data, success=False)
     else:
         data = "Key missing. 'job_type'."
         return jsonify(data=data, success=False)
