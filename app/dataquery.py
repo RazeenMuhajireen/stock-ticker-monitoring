@@ -5,7 +5,7 @@ from redbeat.decoder import RedBeatJSONDecoder
 from app.models import TickerTable, EmailID, StockDataTable
 from datetime import datetime
 from sqlalchemy import desc
-from app import db
+from app import db, logger
 
 
 def search_cron_job(term, searchitem):
@@ -86,8 +86,13 @@ def add_ticker_info(stock_ticker_symbol, stock_name, description):
             isalive=True
         )
         db.session.add(ticker_record)
-        db.session.commit()
-        return True, "created new ticker entry"
+        try:
+            db.session.commit()
+            return True, "created new ticker entry"
+        except Exception as e:
+            db.session.rollback()
+            logger.error("unable to create")
+            return False, "failed to create new ticker entry"
     else:
         if ticker_item.isalive:
             return False, "ticker already exists and running."
@@ -95,8 +100,13 @@ def add_ticker_info(stock_ticker_symbol, stock_name, description):
             ticker_item.isalive = True
             ticker_item.stockname = stock_name
             ticker_item.description = description
-            db.session.commit()
-            return True, "ticker already exists, updated info and running again."
+            try:
+                db.session.commit()
+                return True, "ticker already exists, updated info and running again."
+            except Exception as e:
+                db.session.rollback()
+                logger.error("unable to update ticker info")
+                return True, "ticker already exists, update info failed, but running job again."
 
 
 def update_ticker_info(ticker_id, stock_name, description):
@@ -126,23 +136,38 @@ def add_daily_email_info(email_id):
             dailymail_flag=True,
             isalive=True
         )
-        db.session.add(email_record)
-        db.session.commit()
-        return True, "created new email entry"
+
+        try:
+            db.session.add(email_record)
+            db.session.commit()
+            return True, "created new email entry"
+        except Exception as e:
+            db.session.rollback()
+            logger.error("failed to create new email " + str(e))
+            return False, "failed to create new email entry."
     else:
         if email_item.isalive:
             if email_item.dailymail_flag:
                 return False, "daily summary email already exists and running."
             else:
                 email_item.dailymail_flag = True
-                db.session.commit()
-                return True, "email already exists, setting daily summary email."
+                try:
+                    db.session.commit()
+                    return True, "email already exists, setting daily summary email."
+                except Exception as e:
+                    db.session.rollback()
+                    logger.error("failed to update email flag")
+                    return False, 'failed to update email flag'
 
         else:
             email_item.isalive = True
             email_item.dailymail_flag = True
-            db.session.commit()
-            return True, "email already exists, setting daily summary email."
+            try:
+                db.session.commit()
+                return True, "email already exists, setting daily summary email."
+            except Exception as e:
+                db.session.rollback()
+                return False, "failed to change email flags"
 
 
 def update_dailyemail_status(emailid):
@@ -150,14 +175,21 @@ def update_dailyemail_status(emailid):
     if emailitem:
         emailitem.dailymail_flag = False
         emailitem.isalive = False
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
 
 
 def update_ticker_status(ticker_symbol):
     ticker_object = db.session.query(TickerTable).filter(TickerTable.tickersymbol == ticker_symbol).first()
     if ticker_object:
         ticker_object.isalive = False
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error("failed to change status of ticker" + str(e))
 
 
 def list_all_current_stock_data():
