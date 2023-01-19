@@ -145,7 +145,6 @@ def list_all_active_jobs():
     if len(jobs[1]) > 0:
         data = []
         for job in jobs[1]:
-            print(job)
             jobinfo = {}
             jobinfo['jobname'] = str(job[0])
             jobinfo['frequency'] = str(job[1])

@@ -25,7 +25,6 @@ def fetch_stock_data(ticker_symbol):
     try:
         ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == str(ticker_symbol)).first()
         ticker = yf.Ticker(ticker_symbol).info
-        print(ticker)
 
         stockdatapoint = StockDataTable(
             datestamp=datetime.utcnow(),
@@ -94,6 +93,6 @@ def send_email_summary(email_id):
         smtp_server.login(app_gmail_address, gmail_app_password)
         smtp_server.sendmail(app_gmail_address, to, msg.as_string())
         smtp_server.close()
-        print("Email sent successfully!")
-    except Exception as ex:
-        print("Something went wrong….", ex)
+        logger.debug("Email sent successfully!")
+    except Exception as e:
+        logger.error("Failed to send email - " + str(e))

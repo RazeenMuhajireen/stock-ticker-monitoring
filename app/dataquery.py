@@ -57,8 +57,7 @@ def search_cron_job(term, searchitem):
 
 
 def remove_job(cronitem):
-    print("cron item to delete ====")
-    print(cronitem)
+    logger.debug("cron item to delete - " + str(cronitem))
     entry = current_app.scheduler(cronitem, app=current_app.celery)
     entry.delete()
 

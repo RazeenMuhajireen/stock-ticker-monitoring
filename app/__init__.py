@@ -56,7 +56,6 @@ def configure_database(app):
 
 
 def create_app():
-    print("creating app")
     app = Flask(__name__)
     register_env_variables(app)
     register_extensions(app)
