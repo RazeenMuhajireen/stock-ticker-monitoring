@@ -29,7 +29,6 @@ def search_cron_job(term, searchitem):
     else:
         scantype = ''
 
-    print(scantype + term)
     for key in r.scan_iter(scantype + term):
         keyvalue = r.hget(key, 'definition')
         decodedkey = json.loads(keyvalue, cls=RedBeatJSONDecoder)
@@ -167,6 +166,7 @@ def list_all_current_stock_data():
     if len(running_ticker_jobs) > 0:
         for ticker_item in running_ticker_jobs:
             marketdict = {}
+            marketdict['ticker_id'] = ticker_item.id
             marketdict['ticker_symbol'] = ticker_item.tickersymbol
             marketdict['stock_name'] = ticker_item.stockname
             marketdict['description'] = ticker_item.description

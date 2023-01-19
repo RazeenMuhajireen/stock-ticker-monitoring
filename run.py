@@ -29,13 +29,15 @@ def add_job():
 
     cjobtype = json_data.get('job_type', None)
 
-    # if interval is not specified default interval is 15 minutes
-    cinterval = int(json_data.get('interval', '15'))
-    cinterval = cinterval * 60
+
     croninterval = celery.schedules.schedule(run_every=cinterval)
 
     if cjobtype:
         if cjobtype == 'inventory':
+            # if interval is not specified default interval is 15 minutes
+            cinterval = int(json_data.get('interval', '15'))
+            cinterval = cinterval * 60
+
             stock_ticker_symbol = json_data.get('stock_ticker_symbol', None)
             stock_name = json_data.get('stock_name', 'Not Set')
             description = json_data.get('description', 'Not Set')
@@ -53,6 +55,9 @@ def add_job():
 
         else:
             # job_type == 'dailyemail
+            # if interval is not specified default interval is 24 hours (1440 minutes)
+            cinterval = int(json_data.get('interval', '1440'))
+            cinterval = cinterval * 60
             email_address = json_data.get('email_address', None)
             if not email_address:
                 data = "Key missing. 'email_address'."
@@ -83,7 +88,7 @@ def add_job():
 def remove_scheduled_job():
     json_data = json.loads(request.data)
     jobtype = json_data.get('job_type', None)
-    term =  json_data.get('term', None)
+    term = json_data.get('term', None)
 
     if jobtype is None:
         data = "Key missing. 'job_type'. please specify job_type as 'inventory' or 'dailyemail'."
@@ -131,6 +136,26 @@ def single_stock_data(ticker_id):
 @app.route('/list_all_tickers_info', methods=['GET'])
 def list_all_tickers_info():
     data = get_tickers_info()
+    return jsonify(data=data, success=True)
+
+
+@app.route('/list_all_active_jobs', methods=['GET'])
+def list_all_active_jobs():
+    term = ''
+    jobtype = 'all'
+    jobs = search_cron_job(term, jobtype)
+    if len(jobs[1]) > 0:
+        data = []
+        for job in jobs[1]:
+            print(job)
+            jobinfo = {}
+            jobinfo['jobname'] = str(job[0])
+            jobinfo['frequency'] = str(job[1])
+            jobinfo['function'] = str(job[2])
+            jobinfo['args'] = str(job[3])
+            data.append(jobinfo)
+    else:
+        data = "No jobs running currently"
     return jsonify(data=data, success=True)
 
 
