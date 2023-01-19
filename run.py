@@ -2,9 +2,10 @@ import os
 from flask import jsonify, request, current_app
 from flask_migrate import Migrate
 from app.dataquery import remove_job, search_cron_job, add_ticker_info, update_ticker_info, add_daily_email_info, \
-    update_dailyemail_status, update_ticker_status, list_all_current_stock_data, get_stock_data
+    update_dailyemail_status, update_ticker_status, list_all_current_stock_data, get_stock_data, get_tickers_info
 from datetime import datetime
 import celery
+import json
 from app import create_app, db
 from app import logger
 
@@ -24,53 +25,52 @@ def add_job():
     apredis = current_app.redis
     zentrytime = int(datetime.now().timestamp())
 
-    if 'interval' not in request.args:
-        data = "'interval' parameter missing. please specify interval as integer."
-        return jsonify(data=data, success=False)
-    if 'job_type' not in request.args:
-        data = "'job_type' parameter missing. please specify job_type as inventory or dailyemail."
-        return jsonify(data=data, success=False)
+    json_data = json.loads(request.data)
 
-    cinterval = int(request.args.get('interval'))
-    cjobtype = request.args.get('job_type')
+    cjobtype = json_data.get('job_type', None)
 
+    # if interval is not specified default interval is 15 minutes
+    cinterval = int(json_data.get('interval', '15'))
     cinterval = cinterval * 60
     croninterval = celery.schedules.schedule(run_every=cinterval)
 
-    if cjobtype == "inventory":
-        cfunction = 'app.inventory.fetch_stock_data'
-        if 'stock_ticker_symbol' not in request.args:
-            data = "'stock_ticker_symbol' parameter missing. please specify stock_ticker_symbol."
-            return jsonify(data=data, success=False)
-        cargs1 = request.args.get('stock_ticker_symbol')
-        cargs2 = request.args.get('stock_name', "Not Set")
-        cargs3 = request.args.get('description', "Not Set")
+    if cjobtype:
+        if cjobtype == 'inventory':
+            stock_ticker_symbol = json_data.get('stock_ticker_symbol', None)
+            stock_name = json_data.get('stock_name', 'Not Set')
+            description = json_data.get('description', 'Not Set')
+            if not stock_ticker_symbol:
+                data = "Key missing. 'stock_ticker_symbol'."
+                return jsonify(data=data, success=False)
+            else:
+                cfunction = 'app.inventory.fetch_stock_data'
+                add_ticker_result = add_ticker_info(stock_ticker_symbol, stock_name, description)
+                if not add_ticker_result[0]:
+                    data = "Unable to add job. Ticker job already running for the ticker symbol:" + str(stock_ticker_symbol)
+                    return jsonify(data=data, success=False)
+                args = [stock_ticker_symbol]
+                jobdescription = 'StockTicker:inventory:' + str(stock_ticker_symbol)
 
-        add_ticker_result = add_ticker_info(cargs1, cargs2, cargs3)
+        else:
+            # job_type == 'dailyemail
+            email_address = json_data.get('email_address', None)
+            if not email_address:
+                data = "Key missing. 'email_address'."
+                return jsonify(data=data, success=False)
+            else:
+                cfunction = 'app.inventory.send_email_summary'
+                add_email_result = add_daily_email_info(email_address)
+                if not add_email_result[0]:
+                    data = "Unable to add job. Email job already running for the email address:" + str(email_address)
+                    return jsonify(data=data, success=False)
+                args = [email_address]
+                jobdescription = 'StockTicker:dailyemail:' + str(email_address)
 
-        if not add_ticker_result[0]:
-            data = "Unable to add job. Ticker job already running for the ticker symbol:" + str(cargs1)
-            return jsonify(data=data, success=False)
-        args = [cargs1]
-        jobdescription = 'StockTicker:inventory:' + str(cargs1)
-
-    elif cjobtype == "dailyemail":
-        cfunction = 'app.inventory.send_email_summary'
-        if 'email_address' not in request.args:
-            data = "'email_address' parameter missing. please specify email address to send summary mail."
-            return jsonify(data=data, success=False)
-
-        cargs1 = request.args.get('email_address')
-        args = [cargs1]
-        jobdescription = 'StockTicker:dailyemail:' + str(cargs1)
-
-        add_email_result = add_daily_email_info(cargs1)
-        if not add_email_result[0]:
-            data = "Unable to add job. Email job already running for the email address:" + str(cargs1)
-            return jsonify(data=data, success=False)
+    else:
+        data = "Key missing. 'job_type'."
+        return jsonify(data=data, success=False)
 
     newjob = current_app.scheduler(jobdescription, cfunction, croninterval, args=args, app=current_app.celery)
-
     newjob.save()
     carglist = ','.join(args)
     newkey = '{}|{}|{}|{}'.format(jobdescription, croninterval, cfunction, carglist)
@@ -81,15 +81,18 @@ def add_job():
 
 @app.route('/remove_scheduled_job', methods=['POST'])
 def remove_scheduled_job():
-    if 'job_type' not in request.args:
-        data = "'job_type' parameter missing. please specify as inventory or dailyemail."
+    json_data = json.loads(request.data)
+    jobtype = json_data.get('job_type', None)
+    term =  json_data.get('term', None)
+
+    if jobtype is None:
+        data = "Key missing. 'job_type'. please specify job_type as 'inventory' or 'dailyemail'."
         return jsonify(data=data, success=False)
-    if 'term' not in request.args:
-        data = "'term' parameter missing. please specify term as stock ticker symbol for inventory job or email " \
-               "address for dailyemail job"
+    if term is None:
+        data = "Key missing. 'term'. please specify term as stock ticker symbol for inventory job or email address " \
+               "for dailyemail job"
         return jsonify(data=data, success=False)
-    jobtype = request.args.get('job_type')
-    term = request.args.get('term')
+
     jobs = search_cron_job(term, jobtype)
     if len(jobs[1]) > 0:
         message = remove_job(jobs[1][0][0])
@@ -108,25 +111,26 @@ def list_current_stock_jobs():
     return jsonify(data=data, success=True)
 
 
-@app.route('/update_ticker_details', methods=['POST'])
-def update_ticker_details():
-    ticker_symbol = request.args.get('ticker_symbol', '')
-    stock_name = request.args.get('stock_name', '')
-    description = request.args.get('description', '')
+@app.route('/update_ticker_details/<ticker_id>', methods=['POST'])
+def update_ticker_details(ticker_id):
+    json_data = json.loads(request.data)
+    stock_name = json_data.get('stock_name', None)
+    description = json_data.get('description', None)
 
-    result = update_ticker_info(ticker_symbol, stock_name, description)
+    result = update_ticker_info(ticker_id, stock_name, description)
 
     return jsonify(data=result[1], success=result[0])
 
 
-@app.route('/single_stock_data', methods=['GET'])
-def single_stock_data():
-    if 'ticker_symbol' not in request.args:
-        data = "'ticker_symbol' parameter missing. please specify as ticker_symbol to retreive data."
-        return jsonify(data=data, success=False)
+@app.route('/single_stock_data/<ticker_id>', methods=['GET'])
+def single_stock_data(ticker_id):
+    data = get_stock_data(ticker_id)
+    return jsonify(data=data, success=True)
 
-    ticker_symbol = request.args.get('ticker_symbol')
-    data = get_stock_data(ticker_symbol)
+
+@app.route('/list_all_tickers_info', methods=['GET'])
+def list_all_tickers_info():
+    data = get_tickers_info()
     return jsonify(data=data, success=True)
 
 

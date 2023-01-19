@@ -100,13 +100,13 @@ def add_ticker_info(stock_ticker_symbol, stock_name, description):
             return True, "ticker already exists, updated info and running again."
 
 
-def update_ticker_info(stock_ticker_symbol, stock_name, description):
-    ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == stock_ticker_symbol).first()
+def update_ticker_info(ticker_id, stock_name, description):
+    ticker_item = db.session.query(TickerTable).filter(TickerTable.id == ticker_id).first()
 
     if ticker_item:
-        if stock_name != '':
+        if stock_name:
             ticker_item.stockname = stock_name
-        if description != '':
+        if description:
             ticker_item.description = description
         try:
             db.session.commit()
@@ -171,8 +171,8 @@ def list_all_current_stock_data():
             marketdict['stock_name'] = ticker_item.stockname
             marketdict['description'] = ticker_item.description
             marketdata = db.session.query(StockDataTable) \
-                .filter(StockDataTable.stock_ticker_id == ticker_item.id).order_by(
-                desc(StockDataTable.datestamp)).first()
+                .filter(StockDataTable.stock_ticker_id == ticker_item.id)\
+                .order_by(desc(StockDataTable.datestamp)).first()
             marketdict['sector'] = marketdata.sector
             marketdict['country'] = marketdata.country
             marketdict['regularMarketOpen'] = marketdata.regularMarketOpen
@@ -187,11 +187,11 @@ def list_all_current_stock_data():
     return results
 
 
-def get_stock_data(ticker_symbol):
+def get_stock_data(ticker_id):
     results = []
     stock_data = db.session.query(TickerTable, StockDataTable)\
         .join(StockDataTable)\
-        .filter(TickerTable.tickersymbol == ticker_symbol).all()
+        .filter(TickerTable.id == ticker_id).all()
     if len(stock_data) > 0:
         for datapoint in stock_data:
             marketdict = {}
@@ -262,4 +262,21 @@ def get_summary_data():
         if len(dead_data_list) > 0:
             dead_df = pd.DataFrame(dead_data_list)
     return running_df, dead_df
+
+
+def get_tickers_info():
+    results = []
+    all_tickers = db.session.query(TickerTable).all()
+    if all_tickers:
+        for ticker in all_tickers:
+            data = {}
+            data['id'] = ticker.id
+            data['date_created'] = ticker.datestamp
+            data['ticker_symbol'] = ticker.tickersymbol
+            data['stockname'] = ticker.stockname
+            data['description'] = ticker.description
+            data['isalive'] = ticker.isalive
+            results.append(data)
+    return results
+
 
