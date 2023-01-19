@@ -1,10 +1,10 @@
+import os
+import pandas as pd
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Integer, desc
 from app import create_app
 from datetime import datetime
 from dotenv import load_dotenv
-import os
-import pandas as pd
 
 load_dotenv()
 

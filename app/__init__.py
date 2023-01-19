@@ -54,6 +54,7 @@ def configure_database(app):
     def shutdown_session(exception=None):
         db.session.remove()
 
+
 def create_app():
     print("creating app")
     app = Flask(__name__)

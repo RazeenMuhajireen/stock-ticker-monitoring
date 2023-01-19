@@ -1,11 +1,11 @@
+import pandas as pd
+import json
 from flask import current_app
 from redbeat.decoder import RedBeatJSONDecoder
 from app.models import TickerTable, EmailID, StockDataTable
 from datetime import datetime
 from sqlalchemy import desc
 from app import db
-import pandas as pd
-import json
 
 
 def search_cron_job(term, searchitem):

@@ -1,4 +1,6 @@
 
+import smtplib
+import os
 import yfinance as yf
 from app import create_app
 from app.models import StockDataTable, TickerTable
@@ -8,8 +10,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import smtplib
-import os
+
 
 load_dotenv()
 

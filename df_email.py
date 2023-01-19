@@ -1,9 +1,8 @@
 import smtplib
-from dotenv import load_dotenv
 import os
 import pandas as pd
+from dotenv import load_dotenv
 from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
 
