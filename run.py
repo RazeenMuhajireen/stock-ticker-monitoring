@@ -29,9 +29,6 @@ def add_job():
 
     cjobtype = json_data.get('job_type', None)
 
-
-    croninterval = celery.schedules.schedule(run_every=cinterval)
-
     if cjobtype:
         if cjobtype == 'inventory':
             # if interval is not specified default interval is 15 minutes
@@ -75,6 +72,7 @@ def add_job():
         data = "Key missing. 'job_type'."
         return jsonify(data=data, success=False)
 
+    croninterval = celery.schedules.schedule(run_every=cinterval)
     newjob = current_app.scheduler(jobdescription, cfunction, croninterval, args=args, app=current_app.celery)
     newjob.save()
     carglist = ','.join(args)
