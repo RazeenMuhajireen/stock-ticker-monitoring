@@ -24,23 +24,24 @@ def fetch_stock_data(ticker_symbol):
     # celery task for fetching data from yfinance for ticker symbol
     try:
         ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == str(ticker_symbol)).first()
-        ticker = yf.Ticker(ticker_symbol).info
+        if ticker_item:
+            ticker = yf.Ticker(ticker_symbol).info
 
-        stockdatapoint = StockDataTable(
-            datestamp=datetime.utcnow(),
-            sector=str(ticker['sector']),
-            country=str(ticker['country']),
-            regularMarketOpen=str(ticker['regularMarketOpen']),
-            regularMarketPrice=str(ticker['regularMarketPrice']),
-            regularMarketPreviousClose=str(ticker['regularMarketPreviousClose']),
-            regularMarketVolume=str(ticker['regularMarketVolume']),
-            regularMarketDayLow=str(ticker['regularMarketDayLow']),
-            regularMarketDayHigh=str(ticker['regularMarketDayHigh']),
-            marketCap=str(ticker['marketCap'])
-        )
-        ticker_item.stock_data.append(stockdatapoint)
-        db.session.add(stockdatapoint)
-        db.session.commit()
+            stockdatapoint = StockDataTable(
+                datestamp=datetime.utcnow(),
+                sector=str(ticker['sector']),
+                country=str(ticker['country']),
+                regularMarketOpen=str(ticker['regularMarketOpen']),
+                regularMarketPrice=str(ticker['regularMarketPrice']),
+                regularMarketPreviousClose=str(ticker['regularMarketPreviousClose']),
+                regularMarketVolume=str(ticker['regularMarketVolume']),
+                regularMarketDayLow=str(ticker['regularMarketDayLow']),
+                regularMarketDayHigh=str(ticker['regularMarketDayHigh']),
+                marketCap=str(ticker['marketCap'])
+            )
+            ticker_item.stock_data.append(stockdatapoint)
+            db.session.add(stockdatapoint)
+            db.session.commit()
     except Exception as e:
         logger.error("Error in ticker job: " + str(e))
         db.session.rollback()
