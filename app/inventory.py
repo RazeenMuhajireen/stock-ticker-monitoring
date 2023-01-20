@@ -22,6 +22,7 @@ app.app_context().push()
 
 @celery.task(ignore_result=True)
 def fetch_stock_data(ticker_symbol):
+    # celery task for fetching data from yfinance for ticker symbol
     try:
         ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == str(ticker_symbol)).first()
         ticker = yf.Ticker(ticker_symbol).info
@@ -49,7 +50,7 @@ def fetch_stock_data(ticker_symbol):
 
 @celery.task(ignore_result=True)
 def send_email_summary(email_id):
-
+    # celery task for sending email summary
     app_gmail_address = os.environ.get('APP_MAIL_ADDRESS')
     gmail_app_password = os.environ.get('MAIL_APP_PASSWORD')
     to = [email_id]

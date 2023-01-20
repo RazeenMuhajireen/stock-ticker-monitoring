@@ -58,11 +58,13 @@ def search_cron_job(term, searchitem):
 
 def remove_job(cronitem):
     logger.debug("cron item to delete - " + str(cronitem))
+    # remove entry from scheduler
     entry = current_app.scheduler(cronitem, app=current_app.celery)
     entry.delete()
 
     apredis = current_app.redis
 
+    # remove cron job entry from zset
     cron_jobs = apredis.zrange('cron_jobs', 0, -1)
     for job in cron_jobs:
         split = job.split('|')
@@ -77,6 +79,7 @@ def add_ticker_info(stock_ticker_symbol, stock_name, description):
     ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == stock_ticker_symbol).first()
 
     if not ticker_item:
+        # create new record
         ticker_record = TickerTable(
             datestamp=datetime.utcnow(),
             tickersymbol=stock_ticker_symbol,
@@ -90,12 +93,14 @@ def add_ticker_info(stock_ticker_symbol, stock_name, description):
             return True, "created new ticker entry"
         except Exception as e:
             db.session.rollback()
-            logger.error("unable to create")
+            logger.error("unable to create ticker entry " + str(e))
             return False, "failed to create new ticker entry"
     else:
         if ticker_item.isalive:
+            # ticker is already running
             return False, "ticker already exists and running."
         else:
+            # ticker is not active, activate it
             ticker_item.isalive = True
             ticker_item.stockname = stock_name
             ticker_item.description = description
@@ -104,7 +109,7 @@ def add_ticker_info(stock_ticker_symbol, stock_name, description):
                 return True, "ticker already exists, updated info and running again."
             except Exception as e:
                 db.session.rollback()
-                logger.error("unable to update ticker info")
+                logger.error("unable to update ticker info " + str(e))
                 return True, "ticker already exists, update info failed, but running job again."
 
 
@@ -155,7 +160,7 @@ def add_daily_email_info(email_id):
                     return True, "email already exists, setting daily summary email."
                 except Exception as e:
                     db.session.rollback()
-                    logger.error("failed to update email flag")
+                    logger.error("failed to update email flag " + str(e))
                     return False, 'failed to update email flag'
 
         else:
@@ -249,6 +254,7 @@ def get_summary_data():
     running_df = pd.DataFrame()
     dead_df = pd.DataFrame()
 
+    # get ticker data for active ticker jobs
     running_tickers = db.session.query(TickerTable).filter(TickerTable.isalive == True).all()
     if len(running_tickers) > 0:
         running_data_list = []
@@ -271,6 +277,7 @@ def get_summary_data():
         if len(running_data_list) > 0:
             running_df = pd.DataFrame(running_data_list)
 
+    # get ticker data for not active ticker jobs
     dead_tickers = db.session.query(TickerTable).filter(TickerTable.isalive == False).all()
     if len(dead_tickers) > 0:
         dead_data_list = []
