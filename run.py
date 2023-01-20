@@ -7,7 +7,6 @@ from datetime import datetime
 from app import create_app, db
 from app.dataquery import remove_job, search_cron_job, add_ticker_info, update_ticker_info, add_daily_email_info, \
     update_dailyemail_status, update_ticker_status, list_all_current_stock_data, get_stock_data, get_tickers_info
-from app import logger
 
 
 # WARNING: Don't run with debug turned on in production!

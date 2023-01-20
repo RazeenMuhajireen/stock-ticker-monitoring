@@ -1,4 +1,3 @@
-
 import smtplib
 import os
 import yfinance as yf
