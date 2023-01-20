@@ -1,3 +1,3 @@
 #!/bin/bash
-source /home/raz/myproject/env-new-stock/bin/activate
+source /path/to/python/env/bin/activate
 celery beat -l debug

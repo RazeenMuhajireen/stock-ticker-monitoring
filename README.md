@@ -6,10 +6,12 @@ along with app password to .env
 To run:
 1. create .env variable with respective server/password details.
 2. in SQL create database stock_ticker
-3. pip install -r requirements.txt 
-4. run ./db_init.bash to create tables in sql 
-5. run ./celery_beat.bash 
-6. run ./celery_queue_low.bash
-7. run ./celery_queue_normal.bash 
-8. run ./start_debug.bash
+3. create python 3.9 environment
+4. pip install -r requirements.txt 
+5. change python3.9 env path in db_init.bash, celery_beat.bash, celery_queue_low.bash, celery_queue_normal.bash, start_debug.bash
+6. run ./db_init.bash to create tables in sql 
+7. run ./celery_beat.bash 
+8. run ./celery_queue_low.bash
+9. run ./celery_queue_normal.bash 
+10. run ./start_debug.bash
 

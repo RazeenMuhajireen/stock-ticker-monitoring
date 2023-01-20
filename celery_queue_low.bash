@@ -1,3 +1,3 @@
 #!/bin/bash
-source /home/raz/myproject/env-new-stock/bin/activate
+source /path/to/python/env/bin/activate
 celery -A app.inventory.celery worker -Ofair -Q low --loglevel=debug --autoscale=30,5 --max-memory-per-child=1024000000
