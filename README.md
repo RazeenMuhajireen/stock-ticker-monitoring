@@ -19,3 +19,5 @@ To run:
 9. run ./celery_queue_normal.bash 
 10. run ./start_debug.bash
 
+Check postman documentation for API info. 
+
