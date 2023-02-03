@@ -25,19 +25,20 @@ def fetch_stock_data(ticker_symbol):
     try:
         ticker_item = db.session.query(TickerTable).filter(TickerTable.tickersymbol == str(ticker_symbol)).first()
         if ticker_item:
-            ticker = yf.Ticker(ticker_symbol).info
+            basic_info = yf.Ticker(ticker_symbol).basic_info
+            info = yf.Ticker(ticker_symbol).info
 
             stockdatapoint = StockDataTable(
                 datestamp=datetime.utcnow(),
-                sector=str(ticker['sector']),
-                country=str(ticker['country']),
-                regularMarketOpen=str(ticker['regularMarketOpen']),
-                regularMarketPrice=str(ticker['regularMarketPrice']),
-                regularMarketPreviousClose=str(ticker['regularMarketPreviousClose']),
-                regularMarketVolume=str(ticker['regularMarketVolume']),
-                regularMarketDayLow=str(ticker['regularMarketDayLow']),
-                regularMarketDayHigh=str(ticker['regularMarketDayHigh']),
-                marketCap=str(ticker['marketCap'])
+                sector=str(info['sector']),
+                country=str(info['country']),
+                regularMarketOpen=str(basic_info['open']),
+                regularMarketPrice=str(basic_info['last_price']),
+                regularMarketPreviousClose=str(basic_info['previous_close']),
+                regularMarketVolume=str(basic_info['last_volume']),
+                regularMarketDayLow=str(basic_info['day_low']),
+                regularMarketDayHigh=str(basic_info['day_high']),
+                marketCap=str(basic_info['market_cap'])
             )
             ticker_item.stock_data.append(stockdatapoint)
             db.session.add(stockdatapoint)
